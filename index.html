@@ -1,0 +1,1192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Paper Trail: a game-show-style training game on FEMA cost recovery and 2 CFR 200 Subpart D procurement for EOC staff.">
+<title>Paper Trail: FEMA Cost Recovery</title>
+<style>
+/* Base reset (the hosted preview supplied this automatically) */
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@600;700;800&display=swap">
+<style>
+/* Layout: a game-show stage. One screen at a time, centered, big type. Answer keys use ICS vest colors.
+   Deliberately single-theme (dark stage), with every color set explicitly. */
+:root {
+  --stage: #110E22;
+  --stage-2: #1B1735;
+  --panel: #231E44;
+  --panel-2: #2D2754;
+  --ink: #F5F3FF;
+  --muted: #BDB7DD;
+  --line: #3E3770;
+  --focus: #7FD3FF;
+  --hazard: #FFC93C;
+  --hazard-ink: #1A1400;
+  --ok: #5EDC97;  --ok-bg: #123426;
+  --warn: #FFC24D; --warn-bg: #3A2D10;
+  --bad: #FF7B70;  --bad-bg: #3D1715;
+  --ops: #FF5A4E;  --ops-on: #1A0503;
+  --plan: #4FA3FF; --plan-on: #03101F;
+  --log: #FFCB3D;  --log-on: #1A1400;
+  --fin: #52D46A;  --fin-on: #03170A;
+  --sec: var(--hazard); --sec-on: var(--hazard-ink);
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --r: 14px;
+  color-scheme: dark;
+}
+body[data-sec="ops"]  { --sec: var(--ops);  --sec-on: var(--ops-on); }
+body[data-sec="plan"] { --sec: var(--plan); --sec-on: var(--plan-on); }
+body[data-sec="log"]  { --sec: var(--log);  --sec-on: var(--log-on); }
+body[data-sec="fin"]  { --sec: var(--fin);  --sec-on: var(--fin-on); }
+
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  background: var(--stage); color: var(--ink);
+  background-image: radial-gradient(60rem 40rem at 85% -10%, rgba(79,163,255,.16), transparent 60%),
+                    radial-gradient(50rem 36rem at -10% 110%, rgba(255,90,78,.14), transparent 60%);
+  background-attachment: fixed;
+  font-family: var(--body); font-size: 1.05rem; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 56px;
+}
+.wrap { max-width: 880px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.02; text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.eyebrow { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: .9rem; color: var(--muted); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 8px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+button { font: inherit; color: inherit; cursor: pointer; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  min-height: 52px; padding: .6rem 1.6rem; border-radius: 999px; border: 0;
+  font-family: var(--display); font-weight: 800; font-size: 1.35rem; letter-spacing: .05em; text-transform: uppercase;
+  background: var(--sec); color: var(--sec-on); box-shadow: 0 6px 0 rgba(0,0,0,.35);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 0 rgba(0,0,0,.35); }
+.btn:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.35); }
+.btn.quiet { background: var(--panel-2); color: var(--ink); box-shadow: none; font-size: 1.05rem; min-height: 42px; padding: .4rem 1rem; }
+
+/* HUD */
+.hud {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--stage);
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; padding-block: 12px;
+  border-bottom: 1px solid var(--line);
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--stage); }
+.badge { display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px 5px 5px; border-radius: 999px; background: var(--sec); color: var(--sec-on); font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.badge i { width: 28px; height: 28px; border-radius: 50%; background: var(--sec-on); color: var(--sec); display: grid; place-items: center; font-style: normal; }
+.pips { display: flex; gap: 6px; }
+.pips span { width: 30px; height: 9px; border-radius: 5px; background: var(--line); }
+.pips span.done { background: var(--sec); }
+.pips span.now { background: var(--muted); }
+.hud .grow { flex: 1; }
+.timerbox { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-top: 2px; }
+.timerbar { height: 14px; border-radius: 999px; background: var(--stage-2); border: 1px solid var(--line); overflow: hidden; }
+.timerbar span { display: block; height: 100%; width: 100%; background: var(--sec); border-radius: 999px; transform-origin: left; }
+.timerbox.low .timerbar span { background: var(--bad); }
+.secs { font-family: var(--display); font-weight: 800; font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; min-width: 2.4ch; text-align: right; }
+.timerbox.low .secs { color: var(--bad); animation: throb .5s ease-in-out infinite alternate; }
+@keyframes throb { to { transform: scale(1.12); } }
+
+/* Screens */
+.screen { padding-block: 34px 10px; display: grid; gap: 22px; }
+.screen.enter { animation: enter .42s cubic-bezier(.2,.9,.25,1.15); }
+@keyframes enter { from { opacity: 0; transform: translateY(26px) scale(.98); } to { opacity: 1; transform: none; } }
+
+.title h1 { font-size: clamp(3.4rem, 12vw, 7.2rem); font-weight: 800; text-transform: uppercase; letter-spacing: -.01em; line-height: .9; }
+.title h1 .l2 { display: block; color: var(--hazard); transform: rotate(-2deg); transform-origin: left; }
+.kicker { display: inline-block; margin-bottom: 12px; padding: 4px 14px 2px; border-radius: 8px; background: var(--hazard); color: var(--hazard-ink); font-family: var(--display); font-weight: 800; font-size: clamp(1.1rem, 3.4vw, 1.5rem); letter-spacing: .08em; text-transform: uppercase; }
+.lede { font-size: 1.2rem; max-width: 60ch; }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.how div { background: var(--panel); border-radius: var(--r); padding: 16px; display: grid; gap: 4px; align-content: start; }
+.how b { font-family: var(--display); font-size: 1.45rem; text-transform: uppercase; letter-spacing: .03em; }
+.how div:nth-child(1) b { color: var(--plan); } .how div:nth-child(2) b { color: var(--hazard); } .how div:nth-child(3) b { color: var(--ops); }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.choose legend { font-family: var(--display); font-weight: 800; font-size: 1.6rem; text-transform: uppercase; margin-bottom: 6px; }
+.choose .hint { color: var(--muted); max-width: 64ch; margin-bottom: 12px; }
+.opts3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.tile { position: relative; display: block; }
+.tile input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.tile .face { display: grid; gap: 2px; height: 100%; padding: 12px 14px 12px 46px; border-radius: 12px; border: 2px solid var(--line); background: var(--panel); position: relative; transition: border-color .15s, background .15s; }
+.tile .face::before { content: ""; position: absolute; left: 14px; top: 14px; width: 20px; height: 20px; border: 2px solid var(--muted); border-radius: 50%; }
+.tile input[type="checkbox"] + .face::before { border-radius: 5px; }
+.tile input:checked + .face { border-color: var(--sec); background: var(--panel-2); }
+.tile input:checked + .face::before { border-color: var(--sec); background: var(--sec); box-shadow: inset 0 0 0 4px var(--panel-2); }
+.tile input[type="checkbox"]:checked + .face::before { box-shadow: none; }
+.tile input[type="checkbox"]:checked + .face::after { content: ""; position: absolute; left: 21px; top: 17px; width: 6px; height: 11px; border: solid var(--sec-on); border-width: 0 3px 3px 0; transform: rotate(45deg); }
+.tile input:focus-visible + .face { outline: 3px solid var(--focus); outline-offset: 2px; }
+.tile:hover .face { border-color: var(--muted); }
+.tile small { color: var(--muted); font-size: .92rem; line-height: 1.4; }
+.policy { background: var(--stage-2); border: 1px dashed var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 4px; margin-block: 18px 22px; }
+.policy p { max-width: 70ch; }
+
+.roster { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .roster { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.vest { border-radius: var(--r); padding: 14px 12px; min-height: 130px; display: grid; align-content: space-between; gap: 10px; background: var(--panel); border: 3px solid transparent; transition: transform .1s, opacity .3s, border-color .1s; }
+.vest .bar { height: 12px; border-radius: 4px; }
+.vest h3 { font-size: 1.4rem; text-transform: uppercase; }
+.vest p { font-size: .9rem; color: var(--muted); line-height: 1.35; }
+.vest[data-s="ops"] .bar { background: var(--ops); } .vest[data-s="plan"] .bar { background: var(--plan); }
+.vest[data-s="log"] .bar { background: var(--log); } .vest[data-s="fin"] .bar { background: var(--fin); }
+.vest.lit { transform: translateY(-6px) scale(1.03); border-color: var(--ink); }
+.vest.dim { opacity: .35; }
+.callout { background: var(--panel); border-left: 8px solid var(--sec); padding: 14px 18px; border-radius: 0 var(--r) var(--r) 0; max-width: 66ch; }
+.bigh { font-size: clamp(2.4rem, 7vw, 3.8rem); text-transform: uppercase; }
+
+.scene-num { font-family: var(--display); font-weight: 800; font-size: clamp(1.4rem, 4vw, 2rem); text-transform: uppercase; letter-spacing: .08em; color: var(--sec); }
+.chip { display: inline-block; justify-self: start; padding: 4px 14px; border-radius: 999px; background: var(--ink); color: var(--stage); font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.scene h2, h2.scT { font-size: clamp(2.2rem, 7vw, 3.8rem); text-transform: uppercase; }
+.factline { display: flex; flex-wrap: wrap; gap: 8px 22px; font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.factline b { color: var(--ink); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.setup { background: var(--panel); border-radius: var(--r); padding: 18px 20px; display: grid; gap: 12px; font-size: 1.12rem; }
+.setup p { max-width: 66ch; }
+
+.qmeta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 14px; }
+.context { color: var(--muted); max-width: 70ch; font-size: 1rem; border-left: 4px solid var(--line); padding-left: 12px; }
+details.history { background: var(--stage-2); border-radius: 12px; }
+details.history summary { cursor: pointer; padding: 10px 14px; font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+details.history div { padding: 0 14px 14px; display: grid; gap: 8px; font-size: .98rem; }
+details.history div p { max-width: 70ch; }
+.prompt { font-size: clamp(2rem, 6vw, 3.1rem); font-weight: 800; }
+.answers { display: grid; gap: 12px; }
+.ans {
+  display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 14px;
+  text-align: left; padding: 12px 18px 12px 12px; border-radius: 16px; border: 2px solid var(--line);
+  background: var(--panel); font-size: 1.1rem; line-height: 1.4; min-height: 72px;
+  transition: transform .12s ease, background .12s, border-color .12s, opacity .25s;
+}
+.ans:hover { transform: translateX(4px); border-color: var(--muted); background: var(--panel-2); }
+.key { width: 52px; height: 52px; border-radius: 12px; display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 1.8rem; }
+.k0 { background: var(--ops); color: var(--ops-on); } .k1 { background: var(--plan); color: var(--plan-on); }
+.k2 { background: var(--log); color: var(--log-on); } .k3 { background: var(--fin); color: var(--fin-on); }
+.answers.locked .ans { pointer-events: none; }
+.answers.locked .ans:not(.picked) { opacity: .3; }
+.ans.picked { border-color: var(--ink); background: var(--panel-2); animation: pick .5s ease; }
+@keyframes pick { 30% { transform: scale(1.03); } 100% { transform: none; } }
+.kbd { color: var(--muted); font-size: .92rem; }
+.kbd kbd { font-family: var(--display); font-weight: 700; background: var(--panel-2); border-radius: 5px; padding: 1px 7px; }
+
+.hazard { height: 22px; border-radius: 6px; background: repeating-linear-gradient(-45deg, var(--hazard) 0 18px, var(--hazard-ink) 18px 36px); }
+.inject-banner { justify-self: start; background: var(--hazard); color: var(--hazard-ink); font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: clamp(2.6rem, 10vw, 5rem); line-height: .95; padding: 8px 18px 4px; border-radius: 8px; transform: rotate(-2.5deg); }
+.inject-banner.slam { animation: slam .55s cubic-bezier(.2,1.4,.4,1); }
+@keyframes slam { 0% { transform: scale(2.2) rotate(-12deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: rotate(-2.5deg); } }
+.inject-time { font-family: var(--display); font-weight: 800; font-size: 1.3rem; text-transform: uppercase; letter-spacing: .1em; color: var(--hazard); }
+.inject-text { font-size: clamp(1.3rem, 3.6vw, 1.7rem); line-height: 1.4; max-width: 46ch; font-weight: 700; }
+.newcost { display: inline-flex; gap: 10px; align-items: baseline; background: var(--panel); border-radius: 999px; padding: 6px 16px; justify-self: start; }
+.newcost b { font-family: var(--display); font-size: 1.5rem; font-variant-numeric: tabular-nums; color: var(--hazard); }
+
+.tu-h { font-size: clamp(3rem, 12vw, 6rem); text-transform: uppercase; color: var(--bad); }
+.default { background: var(--bad-bg); border: 2px solid var(--bad); border-radius: var(--r); padding: 16px 18px; font-size: 1.15rem; max-width: 62ch; }
+
+.docs { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 8px; }
+.lane { display: inline-block; margin-left: 4px; padding: 0 8px; border-radius: 999px; font-family: var(--display); font-weight: 800; font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; vertical-align: 1px; }
+.lane.ops { background: var(--ops); color: var(--ops-on); } .lane.plan { background: var(--plan); color: var(--plan-on); }
+.lane.log { background: var(--log); color: var(--log-on); } .lane.fin { background: var(--fin); color: var(--fin-on); }
+
+.center { display: grid; gap: 22px; text-align: center; justify-items: center; min-height: 52vh; align-content: center; }
+.center p { max-width: 50ch; color: var(--muted); }
+.stamp { font-family: var(--display); font-weight: 800; font-size: clamp(4rem, 16vw, 8rem); text-transform: uppercase; color: var(--sec); border: 8px solid var(--sec); border-radius: 16px; padding: 0 22px; line-height: 1.05; transform: rotate(-8deg); }
+.stamp.hit { animation: stamp .45s cubic-bezier(.2,1.5,.4,1); }
+@keyframes stamp { from { transform: scale(2.6) rotate(-20deg); opacity: 0; } to { transform: rotate(-8deg); opacity: 1; } }
+.cal { width: 190px; border-radius: 16px; overflow: hidden; background: var(--ink); color: var(--stage); }
+.cal .top { background: var(--bad); color: var(--bad-bg); font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; padding: 8px; }
+.cal .num { font-family: var(--display); font-weight: 800; font-size: 6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cal .unit { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; padding-bottom: 12px; }
+
+.audit { display: grid; gap: 22px; }
+.audit > header { display: grid; gap: 10px; }
+.audit > header h1 { font-size: clamp(2.6rem, 8vw, 4.4rem); text-transform: uppercase; }
+.summary { background: var(--panel); border-radius: 18px; padding: 20px; display: grid; gap: 16px; }
+.figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+.fig { display: grid; gap: 2px; }
+.fig .v { font-family: var(--display); font-weight: 800; font-size: 2.3rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.fig .l { color: var(--muted); font-size: .92rem; }
+.fig.good .v { color: var(--ok); } .fig.risk .v { color: var(--bad); }
+.meter { height: 24px; border-radius: 999px; background: var(--bad-bg); overflow: hidden; }
+.meter span { display: block; height: 100%; width: 0; background: var(--ok); border-radius: 999px; transition: width 1.4s cubic-bezier(.2,.8,.2,1); }
+.meter-cap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; font-size: .92rem; color: var(--muted); }
+.emerg { border-top: 1px dashed var(--line); padding-top: 14px; display: grid; gap: 4px; }
+.emerg .eyebrow { color: var(--hazard); }
+.emerg p { max-width: 74ch; }
+.finding { background: var(--panel); border-radius: 18px; overflow: hidden; }
+.finding.in { animation: enter .5s cubic-bezier(.2,.8,.2,1) both; }
+.finding > header { padding: 16px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; background: var(--panel-2); }
+.finding > header h3 { font-size: 1.6rem; flex: 1 1 260px; }
+.verdict { padding: 4px 12px; border-radius: 999px; font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+.verdict.ok { background: var(--ok-bg); color: var(--ok); } .verdict.warn { background: var(--warn-bg); color: var(--warn); } .verdict.bad { background: var(--bad-bg); color: var(--bad); }
+.money { font-family: var(--display); font-weight: 800; font-size: 1.2rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fb { padding: 16px 20px 20px; display: grid; gap: 14px; }
+.fb h4 { margin: 0 0 6px; font-family: var(--display); font-weight: 800; font-size: 1.1rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.fb > section { display: grid; gap: 10px; }
+.fb > section + section { border-top: 1px solid var(--line); padding-top: 18px; }
+.fb .sub { color: var(--muted); font-size: .95rem; margin-top: -4px; }
+.breakdown { display: flex; flex-wrap: wrap; gap: 6px 22px; padding: 12px 20px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: .95rem; }
+.breakdown b { color: var(--ink); font-family: var(--display); font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; margin-left: 4px; }
+.breakdown .lost b { color: var(--bad); } .breakdown .kept b { color: var(--ok); }
+.decs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.dec { --c: var(--line); background: var(--stage-2); border: 1px solid var(--line); border-left: 6px solid var(--c); border-radius: 12px; padding: 12px 16px; display: grid; gap: 8px; }
+.dec.best { --c: var(--ok); } .dec.ok { --c: var(--warn); } .dec.risky { --c: var(--bad); }
+.dec-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 12px; }
+.dec-tags { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.rating { display: inline-block; padding: 2px 10px; border-radius: 999px; font-family: var(--display); font-weight: 800; font-size: .9rem; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.rating.best { background: var(--ok-bg); color: var(--ok); } .rating.ok { background: var(--warn-bg); color: var(--warn); } .rating.risky { background: var(--bad-bg); color: var(--bad); }
+.impact { font-family: var(--display); font-weight: 700; font-size: 1rem; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.dec.risky .impact, .dec.ok .impact.hit { color: var(--bad); }
+.chose { font-weight: 700; font-size: 1.08rem; max-width: 72ch; }
+.chose .lbl { display: block; font-family: var(--display); font-weight: 700; font-size: .85rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.why { max-width: 72ch; }
+.better { background: var(--panel); border-radius: 10px; padding: 8px 12px; display: grid; gap: 2px; }
+.better .eyebrow { color: var(--ok); }
+.better p { max-width: 70ch; }
+.filegroups { display: grid; gap: 14px; }
+.fg { display: grid; gap: 6px; }
+.fg h5 { margin: 0; display: flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 800; font-size: 1.15rem; text-transform: uppercase; letter-spacing: .05em; }
+.fg.bad h5 { color: var(--bad); } .fg.warn h5 { color: var(--warn); } .fg.ok h5 { color: var(--ok); } .fg.neutral h5 { color: var(--muted); }
+.fg .count { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 999px; background: var(--panel-2); color: var(--ink); font-size: .95rem; }
+.fg .meaning { color: var(--muted); font-size: .95rem; max-width: 72ch; }
+.fg ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 6px; }
+.fg li { max-width: 72ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-doc { background: var(--ok-bg); color: var(--ink); border-radius: 999px; padding: 3px 12px; font-size: .92rem; }
+.legend { background: var(--stage-2); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; display: grid; gap: 12px; }
+.legend h2 { font-size: 1.7rem; text-transform: uppercase; }
+.legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.legend-grid > div { display: grid; gap: 6px; align-content: start; }
+.legend-grid .rating { justify-self: start; }
+.legend p { max-width: 72ch; }
+.findings-h { font-size: clamp(1.8rem, 5vw, 2.4rem); text-transform: uppercase; }
+.cite { color: var(--muted); font-size: .94rem; }
+.you { font-weight: 700; }
+.timeout-tag { display: inline-block; background: var(--bad-bg); color: var(--bad); font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: .05em; font-size: .85rem; padding: 0 8px; border-radius: 999px; margin-right: 6px; }
+.takeaways { background: var(--hazard); color: var(--hazard-ink); border-radius: 18px; padding: 22px; display: grid; gap: 12px; }
+.takeaways h2 { font-size: 2.1rem; text-transform: uppercase; }
+.takeaways ol { margin: 0; padding-left: 1.3rem; display: grid; gap: 8px; max-width: 76ch; }
+.fine { font-size: .92rem; color: var(--muted); max-width: 80ch; }
+
+dialog { border: 0; border-radius: 18px; padding: 0; background: var(--panel); color: var(--ink); width: min(760px, calc(100% - 32px)); max-height: calc(100% - 32px); }
+dialog::backdrop { background: rgba(5, 4, 14, .75); }
+.dlg { padding: 20px; display: grid; gap: 14px; }
+.dlg header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.dlg h2 { font-size: 1.9rem; text-transform: uppercase; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .98rem; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+td:first-child { white-space: nowrap; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pause-veil { position: fixed; inset: 0; z-index: 30; background: rgba(10, 8, 22, .96); display: grid; place-content: center; justify-items: center; gap: 18px; text-align: center; padding: 24px; }
+.pause-veil h2 { font-size: clamp(3rem, 12vw, 6rem); text-transform: uppercase; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud" id="hud" hidden>
+    <span class="badge" id="badge"><i aria-hidden="true"></i><span></span></span>
+    <span class="pips" id="pips" aria-hidden="true"></span>
+    <span class="grow"></span>
+    <button class="btn quiet" id="aidBtn" type="button">Job aid</button>
+    <button class="btn quiet" id="pauseBtn" type="button">Pause</button>
+    <div class="timerbox" id="timerbox" hidden>
+      <div class="timerbar" aria-hidden="true"><span id="timerfill"></span></div>
+      <span class="secs" id="secs">25</span>
+    </div>
+  </div>
+  <div class="sr" aria-live="polite" id="announcer"></div>
+  <main id="stage"></main>
+</div>
+
+<dialog id="aid" aria-labelledby="aidTitle">
+  <div class="dlg">
+    <header><h2 id="aidTitle">Job aid</h2><button class="btn quiet" id="aidClose" type="button">Close</button></header>
+    <p>Use the stricter of your agency's limits and the federal limits. This drill uses a sample county policy: micro-purchases up to $10,000, and formal solicitation with Board approval above $200,000.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Estimated cost</th><th>Method</th><th>Core documentation</th></tr></thead>
+        <tbody>
+          <tr><td>Up to $10,000</td><td>Micro-purchase</td><td>Price considered reasonable. Spread purchases among qualified suppliers when practicable.</td></tr>
+          <tr><td>$10,000 to $200,000</td><td>Small purchase (informal quotes)</td><td>Quotes from an adequate number of qualified sources.</td></tr>
+          <tr><td>Over $200,000</td><td>Sealed bids or competitive proposals</td><td>Public solicitation, award record, Board approval.</td></tr>
+          <tr><td>Over $350,000</td><td>Any method</td><td>Cost or price analysis, required federally (2 CFR 200.324).</td></tr>
+          <tr><td>Any amount</td><td>Noncompetitive (limited cases)</td><td>Written justification. An emergency counts only while an actual threat to life, property, or public health can't wait for competition.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cite">Also check: Appendix II contract clauses (termination above $10,000), a SAM.gov exclusion check on every vendor (this agency requires it on every purchase; the federal floor is $25,000), outreach to small, minority-owned and women-owned firms, no cost-plus-a-percentage-of-cost pricing, and a ceiling on any time-and-materials contract. Federal thresholds reflect the FAR adjustment effective October 1, 2025.</p>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  const FED_SHARE = 0.75;
+  const DOC_PENALTY = 0.15;
+  const SECTIONS = {
+    ops:  { name: "Operations", short: "Ops", letter: "O", job: "Directs field work. Knows what's needed and where." },
+    plan: { name: "Planning & Intelligence", short: "Plan", letter: "P", job: "Tracks requests, status, and documentation." },
+    log:  { name: "Logistics", short: "Log", letter: "L", job: "Orders supplies, equipment, and services." },
+    fin:  { name: "Finance & Administration", short: "Fin", letter: "F", job: "Procurement, cost, and claims. Guards cost recovery." }
+  };
+
+  const DOCS = [
+    { id: "rr", name: "ICS 213 RR resource request", lane: "plan", why: "Ties the purchase to the incident: who asked for what, when, and why." },
+    { id: "photos", name: "Photos and field notes of the threat", lane: "ops", why: "Shows the conditions that called for urgent action. Gather them while it's happening." },
+    { id: "just", name: "Written emergency justification", lane: "fin", why: "Explains the threat, why competition would cause unacceptable delay, and when the emergency ended (2 CFR 200.320(c))." },
+    { id: "reason", name: "Price reasonableness note", lane: "fin", why: "The core record for a micro-purchase: how you judged the price reasonable (2 CFR 200.320(a)(1))." },
+    { id: "quotes", name: "Quotes from qualified sources", lane: "fin", why: "A small purchase needs price or rate quotes from an adequate number of qualified sources (2 CFR 200.320(a)(2))." },
+    { id: "solicit", name: "Public solicitation and award record", lane: "fin", why: "Formal methods need a publicized solicitation and a record of how the award was made (2 CFR 200.320(b))." },
+    { id: "cpa", name: "Cost or price analysis", lane: "fin", why: "Required for any procurement above the $350,000 federal simplified acquisition threshold, competitive or not (2 CFR 200.324)." },
+    { id: "breakout", name: "Memo on why purchases are separate", lane: "fin", why: "Shows related purchases are distinct requirements, not one requirement divided to stay under a threshold." },
+    { id: "board", name: "Board approval or ratification", lane: "fin", why: "Your agency requires Board action above $200,000. FEMA checks that you followed your own documented procedures (2 CFR 200.318(a))." },
+    { id: "sam", name: "SAM.gov exclusion check", lane: "fin", why: "Required for every purchase under this agency's policy. Federal rules require it at $25,000 and up (2 CFR 180.220, 180.300), and checking every vendor keeps federal funds from going to a suspended or debarred one." },
+    { id: "clauses", name: "Required federal contract clauses", lane: "fin", why: "Contracts need the applicable Appendix II clauses, including termination provisions above $10,000 (2 CFR 200.327)." },
+    { id: "sbe", name: "Outreach to small, minority-owned and women-owned firms", lane: "log", why: "Affirmative steps must be taken and documented when you compete a purchase (2 CFR 200.321)." },
+    { id: "bonds", name: "Bid, performance and payment bonds", lane: "fin", why: "Needed for construction contracts above the simplified acquisition threshold (2 CFR 200.326)." },
+    { id: "inv", name: "Invoices with proof of delivery", lane: "log", why: "Proves what was received and what was paid." },
+    { id: "logs", name: "Equipment, labor and load-ticket logs", lane: "plan", why: "Proves the hours and quantities billed. FEMA tests these line by line." },
+    { id: "contract", name: "Fully executed contract", lane: "fin", why: "The signed agreement with scope, pricing, any not-to-exceed ceiling, and the required federal clauses. FEMA reviews the contract itself, not just the invoices." },
+    { id: "po", name: "Purchase order", lane: "fin", why: "The county's binding order for goods: what, how many, at what price, with the required federal clauses attached. It's what the invoice gets matched against." },
+    { id: "rate", name: "Vendor's own rate sheet", lane: "log", decoy: true, why: "Shows what the vendor charges, not that the price is reasonable. It doesn't replace quotes or a cost analysis." },
+    { id: "email", name: "Email: “Approved, go ahead”", lane: "ops", decoy: true, why: "Shows someone said yes. It isn't a contract or a purchase order, and it doesn't show the method or how the price was set." }
+  ];
+  const DOC = Object.fromEntries(DOCS.map(d => [d.id, d]));
+  /* Process records exist only if a decision produced them. Listing one that doesn't exist is a false entry. */
+  const PROCESS = new Set(["just", "reason", "quotes", "solicit", "cpa", "breakout", "board", "contract", "po", "bonds"]);
+  const FALSE_PENALTY = 0.15;
+  const DECOY_PENALTY = 0.05;
+
+  /* Option fields: t text; v best|ok|risky; loss = share of federal funding put at risk;
+     need = documents this choice requires; fb = audit feedback; emer = leans on an emergency claim; fit = the claim truly fits. */
+  const SCENARIOS = [
+    {
+      id: "prep", tag: "Preparedness", when: "October 2 · 1000 · Blue-sky day", costLabel: "Two requests", cost: 362000, finalCost: 404000,
+      title: "Get ready for storm season",
+      brief: "Preparedness grant. Flood-fighting equipment ($190,000) and slope stabilization materials ($172,000). Storm season is six weeks out.",
+      setup: [
+        "Storm season is six weeks away, and OES has a FEMA preparedness grant. Two requests come in. Public Works wants portable flood barriers and two high-capacity trash pumps from equipment dealers, estimated at $190,000. It also wants straw wattles, erosion-control blankets, and rock from landscape and quarry suppliers, estimated at $172,000. County crews will install everything.",
+        "A board member forwards a vendor's “disaster-ready bundle” that covers everything in one $362,000 contract. The note says storm season makes this an emergency, so the county can skip quotes."
+      ],
+      actions: {
+        ops: [
+          { t: "Write specifications by function and quantity so any qualified vendor can quote", v: "best", fb: "Clear specs that don't favor one product are the base of full and open competition (2 CFR 200.319)." },
+          { t: "Copy the specifications from the board member's vendor bundle", v: "risky", fb: "Specs written around one vendor's product restrict competition and can make the procurement noncompliant (2 CFR 200.319)." },
+          { t: "Leave specifications to Logistics and focus on install sites", v: "ok", fb: "Install planning matters, but Operations knows what the equipment has to do." }
+        ],
+        plan: [
+          { t: "Log both requests with the date crews need everything on hand", v: "best", fb: "A planned need-by date shows a managed timeline and explains your method without leaning on urgency." },
+          { t: "Log one combined request", v: "ok", fb: "Fine for tracking, but separate requests make the breakout easier to document." },
+          { t: "Mark the requests “emergency” so they move faster", v: "risky", emer: true, fb: "Labels follow facts. An emergency tag on a preparedness purchase invites the question of what the emergency was." }
+        ],
+        log: [
+          { t: "Treat equipment and materials as separate buys, since they come from different supplier markets", v: "best", fb: "Distinct products from distinct markets are separate requirements. Breaking them out is legitimate and can widen competition (2 CFR 200.321(b)(3))." },
+          { t: "Ask the bundle vendor for a formal quote", v: "ok", fb: "One quote from a vendor a board member suggested isn't competition, but it gives you a price data point." },
+          { t: "Order the bundle now and sort out paperwork later", v: "risky", emer: true, fb: "Ordering before competing commits federal funds to an uncompeted purchase. Nothing here is an emergency." }
+        ],
+        fin: [
+          { t: "Draft a short memo on why the two purchases are separate requirements", v: "best", makes: ["breakout"], fb: "The memo answers the auditor's first question about related purchases that each land under a threshold." },
+          { t: "Confirm the grant budget covers $362,000", v: "ok", fb: "Necessary, but it doesn't document the method or the price basis." },
+          { t: "Pay a deposit to lock in this week's rock price", v: "risky", fb: "Paying before a compliant award commits federal funds to a purchase that hasn't been competed." }
+        ]
+      },
+      method: {
+        prompt: "How do you buy it?",
+        timeout: 2, timeoutText: "Nobody made the call, so the board member's bundle went to purchasing as an emergency buy.",
+        opts: [
+          { t: "Two separate small purchases, each with quotes, plus a memo on why they're separate", v: "best", need: ["rr", "quotes", "breakout", "po", "clauses", "sam", "sbe", "inv"], fb: "Equipment and materials come from different markets, so separate purchases are legitimate. Each falls between $10,000 and $200,000, so informal quotes are the right method and the fastest compliant path." },
+          { t: "One formal solicitation for everything, with Board approval", v: "ok", need: ["rr", "solicit", "board", "cpa", "contract", "clauses", "sam", "sbe", "inv"], fb: "Compliant, but it adds advertising time and a Board agenda slot, and the combined total triggers a cost or price analysis. With six weeks to go, it may not finish before storm season." },
+          { t: "Buy the bundle as an emergency purchase. Storm season is coming.", v: "risky", loss: .75, emer: true, need: ["just"], fb: "Storm season is a forecast, not an emergency. The exception applies only while an actual threat can't wait for competition, and six weeks is plenty of time for quotes. FEMA could disallow the contract or limit it to what it judges reasonable." }
+        ]
+      },
+      injects: [
+        {
+          time: "Inject · 1130", label: "Rock price jump", costNowLabel: "Materials now $214,000",
+          text: "The quarry raises its rock price. The materials estimate jumps from $172,000 to $214,000, which is above your $200,000 formal solicitation threshold.",
+          q: {
+            prompt: "The materials just crossed your formal threshold. What now?",
+            timeout: 1, timeoutText: "Nobody made the call, so purchasing trimmed the rock to get under $200,000 and planned a second order next month.",
+            opts: [
+              { t: "Move the materials to a formal solicitation with Board approval. The equipment purchase stays as it is.", v: "best", need: ["solicit", "board", "contract"], fb: "The method follows the current estimate of each requirement. Materials go formal and equipment stays informal. If you'd already gone formal for everything, nothing changes." },
+              { t: "Cut 15 tons of rock to get under $200,000, then buy the rest next month", v: "risky", loss: .4, fb: "That divides one requirement across time to dodge a threshold. Breaking out different products is fine. Splitting the same product is a classic audit finding." },
+              { t: "Treat the price jump as an emergency and buy now", v: "risky", loss: .5, emer: true, need: ["just"], fb: "A price increase isn't a threat to life or property. The calendar hasn't changed, and there's still time to compete." }
+            ]
+          }
+        },
+        {
+          time: "Inject · Week 2", label: "Board timing",
+          text: "Bids for the materials close in three weeks, and the Board meets the week after. A department head says: “Just award it now and have the Board ratify it later, like we do in emergencies.”",
+          q: {
+            prompt: "Do you wait for the Board?",
+            timeout: 1, timeoutText: "Nobody made the call, so the department head awarded the contract and sent it for ratification later.",
+            opts: [
+              { t: "Put the award on the Board agenda and schedule delivery for week five", v: "best", fb: "A planned purchase follows the planned process. The schedule still works, and your file shows you followed your own procedures." },
+              { t: "Award now and get it ratified later", v: "risky", loss: .3, emer: true, fb: "Ratification after the fact is for real emergencies. Using it on a planned purchase breaks your own procedures, and FEMA checks those (2 CFR 200.318(a))." },
+              { t: "Add the materials to the equipment dealer's existing order", v: "risky", loss: .4, fb: "Adding work outside a contract's scope is a noncompetitive award in disguise." }
+            ]
+          }
+        }
+      ],
+      notes: { bonds: "Not needed. County crews install the materials, so these are purchases of goods, not construction contracts.", cpa: "Neither purchase is above $350,000 on its own, so the federal cost or price analysis isn't triggered unless you combine them." }
+    },
+    {
+      id: "nuisance", tag: "Nuisance flooding", when: "November 14 · 0615 · Storm day 1", costLabel: "Supplier quote", cost: 9800, finalCost: 12400,
+      title: "Water in the streets",
+      brief: "Street ponding in three neighborhoods. No homes affected. Sandbags and three pumps, quoted at $9,800.",
+      setup: [
+        "Overnight rain has left standing water across three low-lying neighborhoods. Water is in streets and driveways but not in homes. Public Works needs 4,000 filled sandbags and three portable pumps for 48 hours. A local supplier quotes $9,800 delivered.",
+        "It's the same supplier Public Works has used for the last four storms. A crew lead asks whether you should double the sandbag order “for next time.”"
+      ],
+      actions: {
+        ops: [
+          { t: "Confirm sandbag counts and pump locations with field crews", v: "best", fb: "Quantities tied to real needs keep the purchase reasonable and easy to defend (2 CFR 200.404)." },
+          { t: "Double the order so you're ready for the next storm", v: "risky", fb: "Buying beyond this incident's needs can make the excess ineligible." },
+          { t: "Send crews out and sort out quantities later", v: "ok", fb: "Speed matters, but without counts the file can't show the quantity was reasonable." }
+        ],
+        plan: [
+          { t: "Open a resource request and track pump rental hours", v: "best", fb: "Rental hours drive the cost. Tracking them supports the invoice." },
+          { t: "Track only the sandbag delivery", v: "ok", fb: "The pumps are part of the cost too. Without hours, the rental invoice has nothing to check against." },
+          { t: "Skip tracking because it's a small purchase", v: "risky", fb: "Unsupported costs are unsupported at any amount." }
+        ],
+        log: [
+          { t: "Buy from a qualified supplier, and rotate suppliers when practicable", v: "best", fb: "Micro-purchases should be spread among qualified suppliers to the extent practicable (2 CFR 200.320(a)(1))." },
+          { t: "Call the usual supplier, as always", v: "ok", fb: "Allowed for one purchase, but the same supplier every storm is a pattern reviewers question." },
+          { t: "Call it an emergency so no one asks about the supplier", v: "risky", emer: true, fb: "Street ponding isn't an emergency, and using the label to avoid questions makes the file weaker." }
+        ],
+        fin: [
+          { t: "Write a one-line price reasonableness note and keep the receipt", v: "best", makes: ["reason"], fb: "That note is the main record a micro-purchase needs." },
+          { t: "Put it on a purchase card and file the card statement", v: "risky", fb: "A card statement shows payment, not what was received or why the price was reasonable." },
+          { t: "Request a full cost analysis", v: "ok", makes: ["cpa"], fb: "Not required at this amount. Extra work without much gain." }
+        ]
+      },
+      method: {
+        prompt: "How do you buy it?",
+        timeout: 2, timeoutText: "Nobody made the call, so Public Works marked it an emergency and called the usual supplier.",
+        opts: [
+          { t: "Micro-purchase, with a note on why the price is reasonable", v: "best", need: ["rr", "reason", "po", "inv"], fb: "At $9,800, this is under the $10,000 micro-purchase limit. No quotes are required. The price just has to be reasonable and documented." },
+          { t: "Get three written quotes first", v: "ok", need: ["rr", "quotes", "po", "inv"], fb: "Compliant, but not required at this amount, and it costs time on a storm morning." },
+          { t: "Emergency purchase. It's flooding.", v: "risky", loss: .2, emer: true, need: ["rr", "just", "po", "inv"], fb: "A micro-purchase already covered this. Calling street ponding an emergency adds a justification you'd have to defend, and no homes are threatened." }
+        ]
+      },
+      injects: [
+        {
+          time: "Inject · 0900", label: "Fourth pump", costNowLabel: "New total $12,400",
+          text: "The rain gets heavier. Public Works wants a fourth pump, which brings the total to $12,400. Water is reaching garages, but homes are still dry. Two other suppliers say they can send prices within the hour.",
+          q: {
+            prompt: "You're over the micro-purchase limit. What do you do?",
+            timeout: 1, timeoutText: "Nobody made the call, so someone put the fourth pump on a separate card purchase.",
+            opts: [
+              { t: "Get quotes from the other two suppliers on the full order before adding the pump", v: "best", need: ["quotes", "clauses"], fb: "Above $10,000, informal quotes are required, and they're an hour away. The termination clause also applies above $10,000." },
+              { t: "Put the fourth pump on a separate card purchase so each stays under $10,000", v: "risky", loss: .4, fb: "One requirement divided to stay under a threshold. This is the split auditors look for." },
+              { t: "It's getting worse. Call it an emergency.", v: "risky", loss: .2, emer: true, need: ["just"], fb: "Water in garages is a problem, not yet a threat to life or homes, and quotes were an hour away. Worse weather doesn't automatically make an emergency." }
+            ]
+          }
+        },
+        {
+          time: "Inject · 1700", label: "Forecast clears",
+          text: "The forecast clears by evening and the water is draining. The crew lead wants to keep the pumps five more days “just in case” and double the sandbags for the next storm.",
+          q: {
+            prompt: "What do you keep?",
+            timeout: 1, timeoutText: "Nobody made the call, so the crew lead kept the pumps and doubled the sandbags.",
+            opts: [
+              { t: "Return the pumps once the water is gone, and buy only what this storm needed", v: "best", need: ["logs"], fb: "Costs must be necessary and reasonable for this incident (2 CFR 200.403–200.404). Rental logs show when the need ended." },
+              { t: "Keep the pumps five days and double the sandbags", v: "risky", loss: .3, fb: "Rentals after the need ends and stock for a future storm aren't costs of this incident." },
+              { t: "Keep the pumps five days, but skip the extra sandbags", v: "ok", loss: .15, need: ["logs"], fb: "Better, but the extra rental days have no incident need behind them." }
+            ]
+          }
+        }
+      ],
+      notes: { logs: "Pump rental hours drive the cost. Logs support the invoice and show when the need ended.", sam: "Even at this amount, the vendor gets checked. Paying a debarred vendor with federal funds makes the cost ineligible, however small it is." }
+    },
+    {
+      id: "debrisflow", tag: "Debris flow", when: "January 9 · 0310 · Atmospheric river peak", costLabel: "First 10 days", cost: 410000, finalCost: 410000,
+      title: "The road is gone",
+      brief: "A debris flow buried a county road and plugged a culvert. 40 homes cut off. Creek backing up toward houses. Estimate $410,000.",
+      setup: [
+        "A debris flow has buried a county road and plugged a culvert. About 40 homes are cut off, and the creek is backing up toward houses. Operations needs two excavators, four dump trucks, and operators on scene before daylight.",
+        "The estimate for the first 10 days is $410,000. One contractor has already called back, and two others usually answer at night."
+      ],
+      actions: {
+        ops: [
+          { t: "Document the threat with times, photos, and the number of homes cut off", v: "best", fb: "Field evidence is the backbone of an emergency justification. Capture it while it's happening." },
+          { t: "Ask for the largest equipment available, regardless of cost", v: "risky", fb: "Equipment far beyond the need can be found unreasonable." },
+          { t: "Start work now and write the justification after the storm", v: "ok", fb: "Work can't wait, but write the justification soon. Facts recalled weeks later are weaker." }
+        ],
+        plan: [
+          { t: "Record when the emergency starts, and track when the threat ends", v: "best", fb: "The emergency exception lasts only as long as the emergency. A tracked end point keeps later costs eligible." },
+          { t: "Log the resource request and move on", v: "ok", fb: "Logging is good, but without an end point the contract may run past the emergency." },
+          { t: "Assume the contract can run until all repairs are done", v: "risky", fb: "Repairs after the emergency need a competed contract." }
+        ],
+        log: [
+          { t: "Call all three contractors for rates and availability before committing", v: "best", makes: ["quotes"], fb: "Even under the emergency exception, a few calls create price competition and a stronger file." },
+          { t: "Accept the first contractor's terms to get trucks rolling", v: "risky", fb: "Signing whatever's offered skips the rate check and can lock in prohibited pricing." },
+          { t: "Advertise an invitation for bids", v: "ok", fb: "Compliant, but the creek won't wait three weeks." }
+        ],
+        fin: [
+          { t: "Compare hourly rates to prior contracts or published equipment rates", v: "best", makes: ["cpa"], fb: "Above $350,000, even a noncompetitive contract needs a cost or price analysis (2 CFR 200.324)." },
+          { t: "Approve the contractor's rate sheet as written", v: "risky", fb: "A rate sheet alone isn't an analysis. FEMA can reduce costs it finds unreasonable." },
+          { t: "Set up a project number to track costs", v: "ok", fb: "Good for cost recovery, but it doesn't show the rates are reasonable." }
+        ]
+      },
+      method: {
+        prompt: "How do you buy it?",
+        timeout: 2, timeoutText: "Nobody made the call, so the first contractor rolled out on their own rate sheet.",
+        opts: [
+          { t: "Emergency exception: get rates from two or three contractors and hire the best one available tonight on time-and-materials with a not-to-exceed ceiling", v: "best", emer: true, fit: true, need: ["rr", "photos", "just", "cpa", "contract", "clauses", "sam", "logs", "board", "inv"], fb: "Homes are cut off and the creek is rising. This is what the exception is for. A few quick calls add price competition, and the ceiling makes time-and-materials allowable (2 CFR 200.318(j)). Above $200,000, the Board ratifies the contract afterward." },
+          { t: "Advertise an invitation for bids and award in three weeks", v: "ok", need: ["rr", "solicit", "cpa", "board", "contract", "clauses", "sam", "sbe", "logs", "inv"], fb: "Compliant, but 40 households can't wait three weeks. When an emergency is real, the exception is the right tool." },
+          { t: "Hire the first contractor who answers, on their rate sheet", v: "risky", loss: .25, emer: true, fit: true, need: ["rr", "just", "cpa", "contract", "clauses", "sam", "logs", "board", "inv"], fb: "The exception fits, but taking the first rate sheet with no comparison or ceiling invites FEMA to cut costs it finds unreasonable." }
+        ]
+      },
+      injects: [
+        {
+          time: "Inject · 0420", label: "Cost-plus offer",
+          text: "The contractor proposes billing “cost plus 15 percent” and wants a signature in ten minutes.",
+          q: {
+            prompt: "Do you sign?",
+            timeout: 1, timeoutText: "Nobody made the call, so the field supervisor signed the cost-plus terms.",
+            opts: [
+              { t: "No. Offer time-and-materials rates with a not-to-exceed ceiling, or unit prices", v: "best", fb: "You kept the pricing allowable. An emergency changes how fast you buy, not which pricing structures are allowed." },
+              { t: "Sign it. It's an emergency.", v: "risky", loss: .6, emer: true, fb: "Cost-plus-a-percentage-of-cost contracts are prohibited in every circumstance, including emergencies (2 CFR 200.324(d))." },
+              { t: "Sign it, but negotiate the markup down to 10 percent", v: "risky", loss: .6, fb: "Any percentage of cost is still prohibited. A lower markup doesn't fix the structure." }
+            ]
+          }
+        },
+        {
+          time: "Inject · Day 6", label: "Emergency ends",
+          text: "The road reopens and the creek runs through the culvert again. What's left is a permanent culvert replacement, estimated at $650,000. The contractor offers to roll it into the current contract.",
+          q: {
+            prompt: "Is it still an emergency?",
+            timeout: 1, timeoutText: "Nobody made the call, so the culvert replacement was added to the emergency contract.",
+            opts: [
+              { t: "No. Close emergency work as of today, document the date, and compete the culvert replacement", v: "best", fb: "The exception ended with the threat. The replacement is a new construction contract: formal competition, Board approval, and bonding above $350,000 (2 CFR 200.326)." },
+              { t: "Roll it in. The contractor's already there.", v: "risky", loss: .4, fb: "Being mobilized doesn't make a contractor the only source. Adding permanent work to an emergency contract is a common finding." },
+              { t: "Keep emergency status until the culvert is done", v: "risky", loss: .4, emer: true, fb: "The threat is over. Stretching emergency status to cover planned repair is exactly what FEMA reviews for." }
+            ]
+          }
+        }
+      ],
+      notes: { cpa: "Above $350,000, even a noncompetitive contract needs a cost or price analysis. Compare rates to prior contracts or published equipment rates.", logs: "Time-and-materials work needs close monitoring. Logs prove the hours billed.", board: "Emergency contracts above $200,000 still go to your Board, usually as ratification after the fact.", rate: "The contractor's rate sheet is their number, not your analysis.", bonds: "Not for this emergency contract. The culvert replacement will need them." }
+    },
+    {
+      id: "shelter", tag: "Mass sheltering", when: "September 3 · 1400 · Evacuation day 2", costLabel: "Estimate", cost: 96000, finalCost: 144000,
+      title: "Beds by tonight",
+      brief: "Wildfire evacuation shelter opens at 1800 for 300 people. Cots, blankets, hygiene kits. Estimate $96,000.",
+      setup: [
+        "A wind-driven wildfire has forced evacuations. The fairgrounds shelter opens at 1800 tonight for up to 300 people and needs cots, blankets, and hygiene kits. The estimate is $96,000.",
+        "Two vendors say they can deliver by 1800 and send prices within the hour. A third is 10 percent cheaper but can't deliver until tomorrow afternoon."
+      ],
+      actions: {
+        ops: [
+          { t: "Confirm the expected population, including people with access and functional needs", v: "best", fb: "Accurate numbers keep quantities reasonable, and access needs shape what to buy." },
+          { t: "Order for 600 to be safe", v: "risky", fb: "Doubling the need doubles the cost. Surplus can be questioned." },
+          { t: "Let Logistics decide the quantities", v: "ok", fb: "Logistics can buy, but Operations knows who is coming through the door." }
+        ],
+        plan: [
+          { t: "Log the request and record the 1800 deadline that drives vendor selection", v: "best", fb: "The deadline explains why the cheaper vendor wasn't chosen. Write it down." },
+          { t: "Log the request after the supplies arrive", v: "ok", fb: "Late logging loses the time pressure that justifies your choice." },
+          { t: "Skip it, since a partner agency tracks shelter supplies", v: "risky", fb: "If the county buys it, the county documents it." }
+        ],
+        log: [
+          { t: "Get quotes from the two vendors who can deliver by 1800", v: "best", makes: ["quotes"], fb: "An hour of informal competition still meets the deadline." },
+          { t: "Skip quotes and call it an emergency purchase", v: "ok", emer: true, fb: "Defensible, but quotes were an hour away. The exception is strongest when competition truly isn't possible." },
+          { t: "Order from the cheaper vendor for tomorrow", v: "risky", fb: "A vendor who can't meet the need isn't a qualified source for it." }
+        ],
+        fin: [
+          { t: "Check both vendors in SAM.gov and add the federal clauses to the order", v: "best", fb: "Every vendor gets an exclusion check, and above $10,000 the termination clause applies." },
+          { t: "Pay on a purchase card for speed", v: "ok", fb: "The payment method is fine, but a card doesn't replace quotes, clauses, or the exclusion check." },
+          { t: "Wait to process it until the declaration is approved", v: "risky", fb: "Procurement rules apply from the start. Waiting only delays the paperwork." }
+        ]
+      },
+      method: {
+        prompt: "How do you buy it?",
+        timeout: 1, timeoutText: "Nobody made the call, so a shelter manager phoned one vendor and ordered.",
+        opts: [
+          { t: "Small purchase: quotes from the two vendors who can deliver by 1800", v: "best", need: ["rr", "quotes", "po", "clauses", "sam", "sbe", "inv"], fb: "At $96,000, this falls between $10,000 and $200,000. Two quotes in an hour still beat the deadline, and the file shows competition." },
+          { t: "Emergency purchase from one vendor", v: "ok", loss: .1, emer: true, need: ["rr", "just", "po", "clauses", "sam", "inv"], fb: "People need beds tonight, so this is defensible. But a reviewer will ask why you skipped quotes that were an hour away." },
+          { t: "Order from the cheapest vendor for tomorrow afternoon", v: "risky", loss: .15, need: ["rr", "quotes", "po", "inv"], fb: "Price matters, but the requirement is beds tonight. Stopgap cots for the gap cost more than the savings." }
+        ]
+      },
+      injects: [
+        {
+          time: "Inject · 1630", label: "Shelter grows", costNowLabel: "New total $144,000",
+          text: "The fire jumps a ridge. The shelter is now planning for 450 people, which raises the order to $144,000. You're still under $200,000.",
+          q: {
+            prompt: "How do you cover the extra 150?",
+            timeout: 1, timeoutText: "Nobody made the call, so staff ordered the extra supplies from whoever answered first.",
+            opts: [
+              { t: "Increase the order with your vendor at the unit prices already quoted, and document the change", v: "best", fb: "The quoted unit prices carry over, so the increase stays competitive and reasonable. Document why the quantity changed." },
+              { t: "Order the extra from whoever answers first", v: "ok", loss: .1, fb: "A second vendor with no price comparison weakens the reasonableness of that portion." },
+              { t: "The shelter is bigger, so it's an emergency now. Skip the paperwork.", v: "risky", loss: .3, emer: true, fb: "More people doesn't change the procurement rules. You had quoted prices, and the order is still under your formal threshold." }
+            ]
+          }
+        },
+        {
+          time: "Inject · 1715", label: "Donated cots",
+          text: "A partner nonprofit offers donated cots for 150 people, arriving at 1900. Your order has already gone to the vendor.",
+          q: {
+            prompt: "What do you do with the offer?",
+            timeout: 1, timeoutText: "Nobody made the call, so the offer was declined and the full order went through.",
+            opts: [
+              { t: "Accept the donation, reduce the vendor order, and record the donated resources", v: "best", fb: "Buying only what you need keeps costs reasonable. FEMA may credit documented donated resources toward the non-federal share of emergency work." },
+              { t: "Decline. The order is already placed.", v: "ok", loss: .05, fb: "Not a violation, but you paid for something that was available for free." },
+              { t: "Accept the donation and keep the full order for the next fire", v: "risky", loss: .2, fb: "Supplies bought beyond this incident's need aren't reimbursable as costs of this incident." }
+            ]
+          }
+        }
+      ],
+      notes: { cpa: "Not required. The order is below $350,000.", sbe: "Affirmative steps apply when you compete a purchase. A ready call list of certified small and disadvantaged suppliers makes it quick." }
+    },
+    {
+      id: "fdebris", tag: "Wildfire debris", when: "October 18 · 0900 · 45 days after the fire", costLabel: "Estimate", cost: 2600000, finalCost: 2600000,
+      title: "Twenty-two miles of debris",
+      brief: "Burned trees, vehicles, and ash debris along 22 miles of county roads. Roads open; hazards cleared in week one. Estimate $2.6 million.",
+      setup: [
+        "Fire-damaged trees, burned vehicles, and ash debris line 22 miles of county roads. The roads are open, and hazards to traffic were cleared in the first week under an emergency contract.",
+        "Public Works estimates $2.6 million to remove and haul the remaining debris. The week-one contractor offers to keep going at the same rates: “No need to bid it out. We're already mobilized.”"
+      ],
+      actions: {
+        ops: [
+          { t: "Define the scope by debris type, volume, and location, with a monitoring plan", v: "best", fb: "A clear scope makes unit-price bidding possible, and monitoring ties each load to eligible work." },
+          { t: "Let the week-one contractor keep working while you write the scope", v: "risky", emer: true, fb: "Work past the emergency under a noncompetitive contract is at risk." },
+          { t: "Wait for the contractor to propose a scope", v: "ok", fb: "The county defines what it's buying. A contractor-written scope tends to favor that contractor." }
+        ],
+        plan: [
+          { t: "Set up load-ticket tracking and debris volume reports", v: "best", fb: "Load tickets are the core records FEMA checks for debris removal." },
+          { t: "Track total tons hauled per week", v: "ok", fb: "Totals help, but FEMA reviews individual loads and locations." },
+          { t: "Rely on the contractor's invoices for quantities", v: "risky", fb: "Independent monitoring is what makes a contractor's quantities believable." }
+        ],
+        log: [
+          { t: "Advertise for bids and send notices to small, minority-owned and women-owned firms", v: "best", fb: "Formal competition plus documented outreach meets 2 CFR 200.320(b) and 200.321." },
+          { t: "Extend the week-one contract since they're already mobilized", v: "risky", emer: true, fb: "The exception ended with the emergency. Extending without competition is a top debris finding." },
+          { t: "Ask three contractors for quotes", v: "risky", fb: "At $2.6 million, informal quotes don't meet the requirement for formal competition." }
+        ],
+        fin: [
+          { t: "Prepare an independent cost estimate and require unit prices", v: "best", makes: ["cpa"], fb: "Required above $350,000, and unit prices avoid prohibited cost-plus-percentage pricing (2 CFR 200.324)." },
+          { t: "Use the week-one emergency rates as the benchmark", v: "ok", fb: "Emergency rates are often inflated. They're a data point, not an independent estimate." },
+          { t: "Plan to award to the lowest bid without analysis", v: "risky", fb: "Low isn't always reasonable. A bid far below the estimate can signal a misread scope." }
+        ]
+      },
+      method: {
+        prompt: "How do you buy it?",
+        timeout: 1, timeoutText: "Nobody made the call, so the week-one contractor kept working.",
+        opts: [
+          { t: "Sealed bids on unit prices, with an independent cost estimate and Board approval", v: "best", need: ["rr", "solicit", "cpa", "board", "contract", "clauses", "sam", "sbe", "logs", "inv"], fb: "The emergency ended when the traffic hazards were cleared. Debris with known types and volumes fits sealed bidding on unit prices." },
+          { t: "Extend the week-one emergency contract", v: "risky", loss: .6, emer: true, need: ["just", "contract", "logs", "inv"], fb: "The emergency ended weeks ago. Continuing emergency work without competition is one of the most common reasons FEMA disallows debris costs." },
+          { t: "Get quotes from three contractors", v: "risky", loss: .6, need: ["quotes", "po", "logs", "inv"], fb: "At $2.6 million, this is far above your $200,000 formal threshold. Informal quotes aren't enough." }
+        ]
+      },
+      injects: [
+        {
+          time: "Inject · Bid opening", label: "Low bid",
+          text: "Bids are in. The low bid is 40 percent below your independent cost estimate. The next two are within 8 percent of it.",
+          q: {
+            prompt: "Do you award to the low bid?",
+            timeout: 1, timeoutText: "Nobody made the call, so the contract went to the low bidder without review.",
+            opts: [
+              { t: "Not yet. Confirm the low bidder understands the scope and can perform, then decide", v: "best", fb: "Awards go to responsible contractors who can perform (2 CFR 200.318(h)). A bid that far below the estimate often signals a misread scope and change orders later." },
+              { t: "Award it immediately. Lowest price wins.", v: "risky", loss: .2, fb: "Lowest isn't automatically reasonable or responsible. If the bidder can't perform, change orders and delays follow." },
+              { t: "Reject all bids and start over", v: "ok", fb: "Allowed with a documented reason, but you have two reasonable bids. Starting over costs weeks." }
+            ]
+          }
+        },
+        {
+          time: "Inject · Week 8", label: "Private property",
+          text: "Public Works asks to add debris from private property to the contract. “It's the same debris, and the trucks are already there.”",
+          q: {
+            prompt: "Do you add it?",
+            timeout: 1, timeoutText: "Nobody made the call, so the private-property work was added as a change order.",
+            opts: [
+              { t: "Keep it out of this contract, and route it through FEMA's separate private-property debris approval", v: "best", fb: "Private-property debris removal needs its own eligibility determination. Keeping it separate protects the rest of the contract." },
+              { t: "Add it as a change order", v: "risky", loss: .3, fb: "That adds out-of-scope work without competition, and the work itself may not be eligible." },
+              { t: "Add it now and sort out eligibility later", v: "risky", loss: .3, fb: "Costs incurred before eligibility is approved are at risk, and they can taint the contract." }
+            ]
+          }
+        }
+      ],
+      notes: { logs: "Load tickets and monitoring records tie each truckload to an eligible location.", bonds: "Debris removal generally isn't a construction contract, so federal bonding isn't required. Your local policy may still ask for it.", rate: "Week-one emergency rates are a data point, not a benchmark." }
+    }
+  ];
+
+  const $ = id => document.getElementById(id);
+  const fmt = n => "$" + Math.round(n).toLocaleString("en-US");
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const KEYS = ["A", "B", "C", "D"];
+
+  let S = null;
+  let iv = null;
+
+  function say(msg) { const a = $("announcer"); a.textContent = ""; setTimeout(() => { a.textContent = msg; }, 60); }
+
+  function mount(html, focusId, cls) {
+    $("stage").innerHTML = `<div class="screen${cls ? " " + cls : ""}${reduce ? "" : " enter"}">${html}</div>`;
+    window.scrollTo({ top: 0, behavior: "auto" });
+    const f = focusId && $(focusId);
+    if (f) f.focus({ preventScroll: true });
+  }
+
+  /* Timer */
+  function stopTimer() { clearInterval(iv); iv = null; if (S) S.tm = null; }
+  function hideTimer() { stopTimer(); $("timerbox").hidden = true; }
+  function startTimer(secs, onExpire) {
+    stopTimer();
+    if (!S.timed) { $("timerbox").hidden = true; return; }
+    $("timerbox").hidden = false;
+    S.tm = { total: secs, left: secs, last: performance.now(), onExpire, warned: false };
+    renderTimer();
+    iv = setInterval(() => {
+      const now = performance.now();
+      if (S.paused) { S.tm.last = now; return; }
+      S.tm.left -= (now - S.tm.last) / 1000; S.tm.last = now;
+      if (!S.tm.warned && S.tm.left <= 10) { S.tm.warned = true; say("10 seconds left."); }
+      renderTimer();
+      if (S.tm.left <= 0) { const f = S.tm.onExpire; stopTimer(); f(); }
+    }, 100);
+  }
+  function renderTimer() {
+    if (!S.tm) return;
+    const left = Math.max(0, S.tm.left);
+    $("timerfill").style.transform = `scaleX(${left / S.tm.total})`;
+    $("secs").textContent = Math.ceil(left);
+    $("timerbox").classList.toggle("low", left <= 5);
+  }
+
+  $("pauseBtn").addEventListener("click", () => {
+    if (!S || S.paused) return;
+    S.paused = true;
+    const v = document.createElement("div");
+    v.className = "pause-veil"; v.setAttribute("role", "dialog"); v.setAttribute("aria-modal", "true"); v.setAttribute("aria-label", "Paused");
+    v.innerHTML = `<h2>Paused</h2><p class="lede">The clock is stopped.</p><button class="btn" id="resumeBtn" type="button">Resume</button>`;
+    document.body.appendChild(v);
+    $("resumeBtn").focus();
+    $("resumeBtn").addEventListener("click", () => { v.remove(); S.paused = false; $("pauseBtn").focus(); });
+  });
+  $("aidBtn").addEventListener("click", () => { const d = $("aid"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); });
+  $("aidClose").addEventListener("click", () => { const d = $("aid"); if (d.close) d.close(); else d.removeAttribute("open"); });
+
+  /* Intro */
+  function intro() {
+    stopTimer(); S = null;
+    document.body.removeAttribute("data-sec");
+    $("hud").hidden = true;
+    mount(`
+      <div class="title"><span class="kicker">FEMA Cost Recovery</span>
+        <h1>Paper <span class="l2">Trail</span></h1><p class="eyebrow" style="margin-top:14px;">An EOC procurement game · 2 CFR 200 Subpart D</p></div>
+      <p class="lede">Five scenarios, one at a time. Conditions change while you decide. Every decision leaves a paper trail, and nobody tells you how yours looks until the auditor arrives, eighteen months after the disaster.</p>
+      <div class="how">
+        <div><b>Decide</b><p>Make your EOC section's call, choose a procurement method, and build the file.</p></div>
+        <div><b>Adapt</b><p>Injects change the facts mid-scenario. Sometimes the right move is to change course. Sometimes it's to hold steady.</p></div>
+        <div><b>Face the audit</b><p>See how much FEMA reimbursement your decisions recovered, and what would have saved the rest.</p></div>
+      </div>
+      <form id="startForm">
+        <fieldset class="choose">
+          <legend>Choose your clock</legend>
+          <p class="hint">Each decision has its own clock. If it runs out, the decision gets made for you, the way it often does in a real EOC when no one makes the call. Reading screens are never timed, and you can pause anytime.</p>
+          <div class="opts3">
+            <label class="tile"><input type="radio" name="timing" id="t-fast" value="25" checked><span class="face"><b>Standard</b><small>25 seconds per decision</small></span></label>
+            <label class="tile"><input type="radio" name="timing" id="t-slow" value="60"><span class="face"><b>Relaxed</b><small>60 seconds per decision</small></span></label>
+            <label class="tile"><input type="radio" name="timing" id="t-off" value="0"><span class="face"><b>Untimed</b><small>For screen readers, first play, or group discussion</small></span></label>
+          </div>
+        </fieldset>
+        <div class="policy"><span class="eyebrow">Sample agency policy</span>
+          <p>Micro-purchases up to <b>$10,000</b>. Formal solicitation with Board approval above <b>$200,000</b>. Both are stricter than the federal limits ($15,000 and $350,000), so the local limits govern. Open the job aid anytime during play.</p></div>
+        <button class="btn" type="submit">Get my EOC assignment</button>
+      </form>`);
+    $("startForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const secs = parseInt(new FormData(e.target).get("timing"), 10) || 0;
+      S = { timed: secs > 0, secs, sIdx: 0, step: 0, section: null, ans: {}, paused: false, locked: false };
+      assign();
+    });
+  }
+
+  /* Assignment */
+  function assign() {
+    mount(`
+      <span class="eyebrow">Check-in</span>
+      <h2 id="asT" class="bigh" tabindex="-1">Assigning your section…</h2>
+      <div class="roster" id="roster">${Object.entries(SECTIONS).map(([k, s]) => `<div class="vest" data-s="${k}"><div class="bar"></div><h3>${esc(s.name)}</h3><p>${esc(s.job)}</p></div>`).join("")}</div>
+      <div id="asNote" class="callout" hidden></div>
+      <div><button class="btn" id="goBtn" type="button" hidden>Report to the EOC</button></div>`, "asT");
+    const keys = Object.keys(SECTIONS);
+    const pick = keys[Math.floor(Math.random() * keys.length)];
+    const vests = [...$("roster").children];
+    const land = () => {
+      S.section = pick; document.body.dataset.sec = pick;
+      vests.forEach(v => { v.classList.toggle("lit", v.dataset.s === pick); v.classList.toggle("dim", v.dataset.s !== pick); });
+      const s = SECTIONS[pick];
+      $("asT").textContent = "You're in " + s.name;
+      $("asNote").innerHTML = `<p><strong>${esc(s.name)}.</strong> ${esc(s.job)} Each scenario starts with your section's call. Then you weigh in on the method and the file, because cost recovery is everyone's job in an activation.</p>`;
+      $("asNote").hidden = false; $("goBtn").hidden = false; $("goBtn").focus();
+      say("You're assigned to " + s.name + ".");
+    };
+    $("goBtn").addEventListener("click", startGame);
+    if (reduce) { land(); return; }
+    let i = 0; const total = 14 + keys.indexOf(pick);
+    (function spin() {
+      const k = keys[i % keys.length];
+      vests.forEach(v => v.classList.toggle("lit", v.dataset.s === k));
+      i++; if (i <= total) setTimeout(spin, 55 + i * 9); else land();
+    })();
+  }
+
+  /* Flow */
+  function stepsFor(sc) {
+    const sec = SECTIONS[S.section];
+    const acts = sc.actions[S.section];
+    const secQ = {
+      prompt: `${sec.name}: what's your first move?`,
+      opts: acts.map(a => Object.assign({ loss: a.v === "risky" ? .1 : 0 }, a)),
+      timeout: Math.max(0, acts.findIndex(a => a.v === "risky")),
+      timeoutText: `Nobody in ${sec.name} made the call, so the default happened: ${acts[Math.max(0, acts.findIndex(a => a.v === "risky"))].t.toLowerCase()}.`
+    };
+    const out = [
+      { type: "scene" },
+      { type: "q", key: "sec", q: secQ, label: "Your section's call", ctx: sc.brief },
+      { type: "q", key: "m", q: sc.method, label: "Procurement method", ctx: sc.brief }
+    ];
+    sc.injects.forEach((inj, i) => {
+      out.push({ type: "inject", inj, i });
+      out.push({ type: "q", key: "i" + i, q: inj.q, label: "Inject: " + inj.label, ctx: inj.text });
+    });
+    out.push({ type: "file" }, { type: "filed" });
+    return out;
+  }
+
+  function startGame() {
+    $("hud").hidden = false;
+    const s = SECTIONS[S.section];
+    $("badge").querySelector("i").textContent = s.letter;
+    $("badge").querySelector("span").textContent = s.name;
+    $("pips").innerHTML = SCENARIOS.map(() => "<span></span>").join("");
+    S.sIdx = 0; S.step = 0; S.ans = {};
+    run();
+  }
+
+  function next() { S.step++; run(); }
+
+  function run() {
+    const sc = SCENARIOS[S.sIdx];
+    S.cur = stepsFor(sc);
+    [...$("pips").children].forEach((p, i) => { p.className = i < S.sIdx ? "done" : i === S.sIdx ? "now" : ""; });
+    if (!S.ans[sc.id]) S.ans[sc.id] = { picks: {}, docs: [] };
+    const st = S.cur[S.step];
+    S.onKey = null;
+    if (st.type === "scene") return scene(sc);
+    if (st.type === "q") return question(sc, st);
+    if (st.type === "inject") return inject(st);
+    if (st.type === "file") return file(sc);
+    return filed(sc);
+  }
+
+  function scene(sc) {
+    hideTimer();
+    mount(`
+      <span class="scene-num">Scenario ${S.sIdx + 1} of ${SCENARIOS.length}</span>
+      <span class="chip">${esc(sc.tag)}</span>
+      <h2 id="scT" class="scT" tabindex="-1">${esc(sc.title)}</h2>
+      <div class="factline"><span>${esc(sc.when)}</span><span>${esc(sc.costLabel)} <b>${fmt(sc.cost)}</b></span></div>
+      <div class="setup">${sc.setup.map(p => `<p>${esc(p)}</p>`).join("")}</div>
+      <div><button class="btn" id="goQ" type="button">I'm ready</button></div>`, "scT");
+    $("goQ").addEventListener("click", next);
+  }
+
+  function historyHTML(sc, upto) {
+    const parts = sc.setup.map(p => `<p>${esc(p)}</p>`);
+    sc.injects.slice(0, upto).forEach(inj => parts.push(`<p><b>${esc(inj.time)}.</b> ${esc(inj.text)}</p>`));
+    return `<details class="history"><summary>Full situation</summary><div>${parts.join("")}</div></details>`;
+  }
+
+  function question(sc, st) {
+    const qs = S.cur.filter(x => x.type === "q");
+    const qn = qs.indexOf(st) + 1;
+    const injSeen = S.cur.slice(0, S.step).filter(x => x.type === "inject").length;
+    mount(`
+      <div class="qmeta"><span class="eyebrow">${esc(sc.tag)} · Decision ${qn} of ${qs.length}</span><span class="eyebrow">${esc(st.label)}</span></div>
+      <p class="context">${esc(st.ctx)}</p>
+      ${historyHTML(sc, injSeen)}
+      <h2 class="prompt" id="prompt" tabindex="-1">${esc(st.q.prompt)}</h2>
+      <div class="answers" id="answers" role="group" aria-labelledby="prompt">
+        ${st.q.opts.map((o, i) => `<button class="ans" type="button" data-i="${i}"><span class="key k${i}" aria-hidden="true">${KEYS[i]}</span><span><span class="sr">${KEYS[i]}. </span>${esc(o.t)}</span></button>`).join("")}
+      </div>
+      <p class="kbd">Tap an answer or press ${st.q.opts.map((_, i) => `<kbd>${KEYS[i]}</kbd>`).join(" ")}. Answers lock in right away.</p>`, "prompt");
+    S.locked = false;
+    const lock = (i, timedOut) => {
+      if (S.locked) return;
+      S.locked = true; S.onKey = null;
+      stopTimer();
+      S.ans[sc.id].picks[st.key] = { i, timedOut: !!timedOut };
+      if (timedOut) return timesUp(st.q);
+      const box = $("answers"); box.classList.add("locked"); box.children[i].classList.add("picked");
+      say("Locked in: " + KEYS[i] + ".");
+      setTimeout(next, reduce ? 350 : 750);
+    };
+    [...$("answers").children].forEach(b => b.addEventListener("click", () => lock(parseInt(b.dataset.i, 10), false)));
+    S.onKey = e => {
+      const k = e.key.toUpperCase();
+      let i = KEYS.indexOf(k);
+      if (i < 0 && /^[1-4]$/.test(k)) i = parseInt(k, 10) - 1;
+      if (i >= 0 && i < st.q.opts.length) { e.preventDefault(); lock(i, false); }
+    };
+    startTimer(S.secs, () => lock(st.q.timeout, true));
+  }
+
+  document.addEventListener("keydown", e => {
+    if (!S || !S.onKey || S.paused || $("aid").open || e.metaKey || e.ctrlKey || e.altKey) return;
+    const t = e.target; if (t && (t.tagName === "SUMMARY" || t.tagName === "INPUT")) return;
+    S.onKey(e);
+  });
+
+  function timesUp(q) {
+    hideTimer();
+    mount(`
+      <h2 id="tu" class="tu-h" tabindex="-1">Time's up</h2>
+      <div class="default"><p>${esc(q.timeoutText)}</p></div>
+      <p class="cite">That default goes in the file. You'll see how it played out in the audit.</p>
+      <div><button class="btn" id="tuGo" type="button">Keep going</button></div>`, "tu");
+    say("Time's up. " + q.timeoutText);
+    $("tuGo").addEventListener("click", next);
+  }
+
+  function inject(st) {
+    hideTimer();
+    const inj = st.inj;
+    mount(`
+      <div class="hazard" aria-hidden="true"></div>
+      <span class="inject-time">${esc(inj.time)}</span>
+      <h2 class="inject-banner${reduce ? "" : " slam"}" id="inj" tabindex="-1">Conditions changed</h2>
+      <p class="inject-text">${esc(inj.text)}</p>
+      ${inj.costNowLabel ? `<span class="newcost"><span class="eyebrow">Update</span><b>${esc(inj.costNowLabel)}</b></span>` : ""}
+      <div><button class="btn" id="injGo" type="button">Respond</button></div>`, "inj");
+    $("injGo").addEventListener("click", next);
+  }
+
+  function file(sc) {
+    mount(`
+      <div class="qmeta"><span class="eyebrow">${esc(sc.tag)} · Final step</span><span class="eyebrow">Build the file</span></div>
+      <h2 class="prompt" id="fT" tabindex="-1">What goes in the file?</h2>
+      <p class="context">Check only the documents this file actually contains. Your decisions determine what exists: if you never got quotes, there are no quotes to file. The auditor will ask for every document you list, so listing one you don't have is a finding, just like leaving out one you need. Tags show which section usually produces each one.</p>
+      <fieldset><legend class="sr">Documents</legend>
+        <div class="docs">${DOCS.map(d => `<label class="tile"><input type="checkbox" name="doc" id="d-${sc.id}-${d.id}" value="${d.id}"><span class="face"><span>${esc(d.name)} <span class="lane ${d.lane}">${SECTIONS[d.lane].short}</span></span></span></label>`).join("")}</div>
+      </fieldset>
+      <div><button class="btn" id="fileGo" type="button">File it</button></div>`, "fT");
+    let done = false;
+    const finish = timedOut => {
+      if (done) return; done = true;
+      stopTimer();
+      S.ans[sc.id].docs = [...document.querySelectorAll('input[name="doc"]:checked')].map(i => i.value);
+      S.ans[sc.id].fileTimedOut = !!timedOut;
+      next();
+    };
+    $("fileGo").addEventListener("click", () => finish(false));
+    startTimer(S.secs * 3, () => finish(true));
+  }
+
+  function filed(sc) {
+    hideTimer();
+    const last = S.sIdx === SCENARIOS.length - 1;
+    const nextSc = SCENARIOS[S.sIdx + 1];
+    const to = S.ans[sc.id].fileTimedOut;
+    mount(`
+      <div class="center">
+        <div class="stamp${reduce ? "" : " hit"}" aria-hidden="true">Filed</div>
+        <h2 id="fd" tabindex="-1" style="font-size:2rem;text-transform:uppercase;">${esc(sc.tag)} is in the cabinet</h2>
+        <p>${to ? "Time ran out, so the file went in with whatever was in it. " : ""}${last ? "That was the last scenario. The activation is over, and the paperwork goes quiet for a long time." : `Next up: ${esc(nextSc.tag.toLowerCase())}.`}</p>
+        <button class="btn" id="fdGo" type="button">${last ? "Fast-forward 18 months" : "Next scenario"}</button>
+      </div>`, "fd");
+    $("fdGo").addEventListener("click", () => {
+      if (last) return later();
+      S.sIdx++; S.step = 0; run();
+    });
+  }
+
+  function later() {
+    hideTimer();
+    $("hud").hidden = true;
+    mount(`
+      <div class="center">
+        <div class="cal" aria-hidden="true"><div class="top">Closeout review</div><div class="num" id="calNum">0</div><div class="unit">months later</div></div>
+        <h2 id="lt" tabindex="-1" class="bigh">The auditor has your files</h2>
+        <button class="btn" id="ltGo" type="button">Open the audit report</button>
+      </div>`, "lt");
+    const n = $("calNum");
+    if (reduce) n.textContent = "18";
+    else { let m = 0; const t = () => { m++; n.textContent = m; if (m < 18) setTimeout(t, 65); }; setTimeout(t, 250); }
+    $("ltGo").addEventListener("click", audit);
+  }
+
+  /* Audit */
+  function grade(sc) {
+    const A = S.ans[sc.id] || { picks: {}, docs: [] };
+    const rows = stepsFor(sc).filter(x => x.type === "q").map(s => {
+      const p = A.picks[s.key];
+      return { s, p, o: p ? s.q.opts[p.i] : null };
+    });
+    let loss = 0; const need = new Set(); const made = new Set();
+    rows.forEach(r => {
+      if (!r.o) { loss += .25; return; }
+      loss += r.o.loss || 0;
+      (r.o.need || []).forEach(d => { need.add(d); made.add(d); });
+      (r.o.makes || []).forEach(d => made.add(d));
+    });
+    need.add("sam"); made.add("sam"); // agency policy: exclusion check on every purchase
+    loss = Math.min(1, loss);
+    const docs = A.docs || [];
+    const missing = [...need].filter(d => !docs.includes(d));
+    const have = [...need].filter(d => docs.includes(d));
+    const decoys = docs.filter(d => DOC[d].decoy);
+    const falses = docs.filter(d => PROCESS.has(d) && !made.has(d));
+    const extras = docs.filter(d => !need.has(d) && !DOC[d].decoy && !falses.includes(d));
+    const filePen = DOC_PENALTY * missing.length + FALSE_PENALTY * falses.length + DECOY_PENALTY * decoys.length;
+    const frac = Math.max(0, (1 - loss) * Math.max(0, 1 - filePen));
+    const verdict = frac >= .99 ? ["ok", "Reimbursable"] : frac >= .75 ? ["warn", "Minor findings"] : frac > 0 ? ["warn", "Costs questioned"] : ["bad", "Ineligible"];
+    return { rows, missing, have, decoys, extras, falses, needN: need.size, loss, filePen, frac, verdict, fileTimedOut: A.fileTimedOut };
+  }
+
+  function li(mark, cls, html) { return `<li><span class="mark ${cls}" aria-hidden="true">${mark}</span><span>${html}</span></li>`; }
+
+  function audit() {
+    let total = 0, possible = 0, got = 0, emerUsed = 0, emerFit = 0, docNeed = 0, docHave = 0, docFalse = 0, docDecoy = 0;
+    const G = SCENARIOS.map(sc => {
+      const g = grade(sc);
+      total += sc.finalCost; possible += sc.finalCost * FED_SHARE; got += sc.finalCost * FED_SHARE * g.frac;
+      g.rows.forEach(r => { if (r.o && r.o.emer) { emerUsed++; if (r.o.fit) emerFit++; } });
+      docNeed += g.needN; docHave += g.have.length; docFalse += g.falses.length; docDecoy += g.decoys.length;
+      return { sc, g };
+    });
+    const pct = possible ? got / possible : 0;
+    let emerText;
+    if (!emerUsed) emerText = "You never reached for an emergency claim. One scenario truly called for it: the debris flow, where 40 homes were cut off and competition couldn't wait. Even there, quick rate calls made the file stronger.";
+    else {
+      emerText = `You leaned on an emergency claim ${emerUsed} ${emerUsed === 1 ? "time" : "times"}. ${emerFit} of those fit the facts.`;
+      emerText += emerUsed > emerFit
+        ? " Before calling something an emergency, ask two questions. Is there an actual threat to life, property, or public health right now? Could you get competition in the time you have? If quotes are an hour away, get the quotes."
+        : " You saved it for the case that needed it.";
+    }
+    let fileText = `${docHave} of ${docNeed} required documents were in your files.`;
+    fileText += docFalse
+      ? ` You also listed ${docFalse} ${docFalse === 1 ? "document that didn't exist" : "documents that didn't exist"}, because nothing you decided produced ${docFalse === 1 ? "it" : "them"}. An index that lists records you can't produce makes the auditor doubt everything else in the file.`
+      : " Every document you listed actually existed.";
+    if (docDecoy) fileText += ` ${docDecoy} ${docDecoy === 1 ? "entry was" : "entries were"} weak evidence, like an approval email or a vendor's own rate sheet.`;
+    const lede = pct >= .9 ? "Strong files. The auditor found little to question, and nearly all of the federal share came back to the county."
+      : pct >= .6 ? "Mixed results. Some files held up, and some decisions cost the county real money. The findings below show where."
+      : "A hard audit. Much of the federal share is in question. The findings below show what would have changed the outcome.";
+
+    mount(`
+      <div class="audit">
+        <header><span class="eyebrow">Closeout review · ${esc(SECTIONS[S.section].name)}</span>
+          <h1 id="auT" tabindex="-1">Your audit report</h1><p class="lede">${lede}</p></header>
+        <div class="summary">
+          <div class="figs">
+            <div class="fig"><span class="v">${fmt(total)}</span><span class="l">Spent across five scenarios</span></div>
+            <div class="fig"><span class="v">${fmt(possible)}</span><span class="l">Federal share available (75%)</span></div>
+            <div class="fig good"><span class="v">${fmt(got)}</span><span class="l">Estimated reimbursement</span></div>
+            <div class="fig risk"><span class="v">${fmt(possible - got)}</span><span class="l">Questioned or ineligible</span></div>
+          </div>
+          <div><div class="meter" role="img" aria-label="${Math.round(pct * 100)} percent of the federal share recovered"><span id="meterFill"></span></div>
+            <div class="meter-cap"><span>Recovered ${Math.round(pct * 100)}%</span><span>Federal share ${fmt(possible)}</span></div></div>
+          <div class="emerg"><span class="eyebrow">File accuracy</span><p>${fileText}</p></div>
+          <div class="emerg"><span class="eyebrow">Emergency exception check</span><p>${emerText}</p></div>
+        </div>
+        <section class="legend" aria-labelledby="lgT">
+          <h2 id="lgT">How to read your findings</h2>
+          <div class="legend-grid">
+            <div><span class="rating best">Best choice</span><p>Compliant, and it builds the strongest file.</p></div>
+            <div><span class="rating ok">Acceptable</span><p>Allowed, but slower, weaker, or harder to defend.</p></div>
+            <div><span class="rating risky">Risky</span><p>Breaks a rule or invites a finding. Puts reimbursement at risk.</p></div>
+          </div>
+          <p>Each scenario starts with its full federal share. Risky decisions take money off the top. Then gaps in the file take a share of what's left: missing documents, documents you listed that didn't exist, and weak evidence.</p>
+        </section>
+        <h2 class="findings-h">Findings by scenario</h2>
+        ${G.map(({ sc, g }, idx) => findingHTML(sc, g, idx)).join("")}
+        <div class="takeaways">
+          <h2>Subpart D in eight rules</h2>
+          <ol>
+            <li>Pick the method by each requirement's current estimate, using the stricter of your agency's limits and the federal ones. When the estimate changes, the method can change too.</li>
+            <li>Breaking out distinct requirements is fine with a written rationale. Dividing one requirement to stay under a threshold is not.</li>
+            <li>Most urgent purchases aren't emergencies. The exception covers only an actual threat that can't wait for competition. If quotes are an hour away, get them.</li>
+            <li>The exception ends when the threat ends. Compete the follow-on work.</li>
+            <li>Above $350,000, every contract needs a cost or price analysis, even a noncompetitive one.</li>
+            <li>Cost-plus-a-percentage-of-cost is never allowed. Time-and-materials needs a ceiling.</li>
+            <li>Follow your own procedures, including Board approval. FEMA checks them.</li>
+            <li>Keep records of the method, contract type, why you chose the contractor, and how you set the price (200.318(i)). List what you have, and have everything you list.</li>
+          </ol>
+        </div>
+        <p class="fine">Training simulation. Dollar figures and outcomes are illustrative; FEMA reviews each project on its facts. Federal share is shown at the standard 75 percent. Thresholds use a sample county policy and the federal limits effective October 1, 2025. For current policy, check the Public Assistance Program and Policy Guide, FEMA's procurement resources, and your Cal OES representative.</p>
+        <div><button class="btn" id="againBtn" type="button">Play again with a new section</button></div>
+      </div>`, "auT");
+    requestAnimationFrame(() => requestAnimationFrame(() => { const f = $("meterFill"); if (f) f.style.width = (pct * 100).toFixed(1) + "%"; }));
+    $("againBtn").addEventListener("click", intro);
+  }
+
+  const RATING = { best: "Best choice", ok: "Acceptable", risky: "Risky" };
+
+  function findingHTML(sc, g, idx) {
+    const amt = sc.finalCost * FED_SHARE;
+    const note = d => (sc.notes && sc.notes[d]) || DOC[d].why;
+    const rawLoss = g.rows.reduce((t, r) => t + (r.o ? (r.o.loss || 0) : .25), 0);
+    const scale = rawLoss > 1 ? 1 / rawLoss : 1;
+    const decCost = amt * g.loss;
+    const fileCost = amt * (1 - g.loss) * Math.min(1, g.filePen);
+    const kept = amt * g.frac;
+
+    const decs = g.rows.map((r, i) => {
+      const head = `<span class="eyebrow">Decision ${i + 1} · ${esc(r.s.label)}</span>`;
+      if (!r.o) return `<li class="dec risky"><div class="dec-top">${head}<span class="dec-tags"><span class="rating risky">No decision</span></span></div><p class="why">Nothing was recorded for this decision.</p></li>`;
+      const cost = amt * (r.o.loss || 0) * scale;
+      const impact = cost > 0 ? `Put ${fmt(cost)} at risk` : "No cost impact";
+      const best = r.s.q.opts.find(o => o.v === "best");
+      return `<li class="dec ${r.o.v}">
+        <div class="dec-top">${head}<span class="dec-tags"><span class="rating ${r.o.v}">${RATING[r.o.v]}</span><span class="impact${cost > 0 ? " hit" : ""}">${impact}</span></span></div>
+        <p class="chose"><span class="lbl">${r.p.timedOut ? "Time ran out, so the default applied" : "You chose"}</span>${esc(r.o.t)}</p>
+        <p class="why">${esc(r.o.fb)}</p>
+        ${r.o.v !== "best" ? `<div class="better"><span class="eyebrow">Stronger move</span><p>${esc(best.t)}</p></div>` : ""}
+      </li>`;
+    }).join("");
+
+    const each = pen => fmt(amt * (1 - g.loss) * Math.min(1, pen));
+    const list = (items, fn) => `<ul>${items.map(d => `<li><b>${esc(DOC[d].name)}.</b> ${esc(fn(d))}</li>`).join("")}</ul>`;
+    const chips = items => `<div class="chips">${items.map(d => `<span class="chip-doc">✓ ${esc(DOC[d].name)}</span>`).join("")}</div>`;
+    const group = (cls, title, meaning, items, body) => items.length
+      ? `<div class="fg ${cls}"><h5>${title} <span class="count">${items.length}</span></h5><p class="meaning">${meaning}</p>${body}</div>` : "";
+    let file = "";
+    if (g.fileTimedOut) file += `<p><span class="timeout-tag">Time ran out</span> The file went in with whatever was checked at the time.</p>`;
+    file += group("bad", "Missing", `Your decisions required these, but they weren't in the file. Each one cost ${each(DOC_PENALTY)}.`, g.missing, list(g.missing, note));
+    file += group("bad", "Listed, but didn't exist", `You listed these, but none of your decisions produced them. The auditor asked, and you couldn't hand them over. Each one cost ${each(FALSE_PENALTY)}.`, g.falses, list(g.falses, () => "Nothing in this scenario created this record."));
+    file += group("warn", "Weak evidence", `These don't support reimbursement on their own. Each one cost ${each(DECOY_PENALTY)}.`, g.decoys, list(g.decoys, note));
+    file += group("ok", "In the file", "Required, and present. No findings.", g.have, chips(g.have));
+    file += group("neutral", "Not needed", "Real records, but your decisions didn't require them. No cost.", g.extras, list(g.extras, d => (sc.notes && sc.notes[d]) || "It doesn't hurt, but this file didn't need it."));
+    if (!file) file = `<p class="why">Nothing was filed.</p>`;
+
+    return `<article class="finding${reduce ? "" : " in"}" style="animation-delay:${idx * 90}ms">
+      <header><h3>${esc(sc.tag)}: ${esc(sc.title)}</h3><span class="verdict ${g.verdict[0]}">${g.verdict[1]}</span><span class="money">${fmt(kept)} of ${fmt(amt)}</span></header>
+      <div class="breakdown">
+        <span>Federal share<b>${fmt(amt)}</b></span>
+        <span class="lost">Lost to decisions<b>${fmt(decCost)}</b></span>
+        <span class="lost">Lost to file gaps<b>${fmt(fileCost)}</b></span>
+        <span class="kept">Recovered<b>${fmt(kept)}</b></span>
+      </div>
+      <div class="fb">
+        <section><h4>1 · Your decisions</h4><p class="sub">Each call you made, how it rates, and what it put at risk.</p><ol class="decs">${decs}</ol></section>
+        <section><h4>2 · Your file</h4><p class="sub">What the auditor found when they opened the file.</p><div class="filegroups">${file}</div></section>
+      </div></article>`;
+  }
+
+  intro();
+})();
+</script>
+</body>
+</html>
